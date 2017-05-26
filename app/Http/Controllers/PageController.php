@@ -20,7 +20,6 @@ class PageController extends Controller
 
     public function welcome(Request $request)
     {
-        // session()->flush();
         if($request->has('code'))
         {
             $code = $request->get('code');
@@ -424,9 +423,10 @@ class PageController extends Controller
         return $allocated;
     }
 
-    public function generate_report ($start = "2017-01-01", $end = "2017-01-30") 
+    public function generate_report_init ($start = "2017-01-01", $end = "2017-01-30") 
     {
         $url = "tasks?createdDate={'start':'".$start."T00:00:01Z','end':'".$end."T00:00:01Z'}&pageSize=1000";
+
         $tasks = $this->api_call("GET" , $url);
 
         if (!empty($tasks['responseSize']))
@@ -438,7 +438,23 @@ class PageController extends Controller
             $data = count($tasks['data']);
             echo $data;
         }
-        dd ($tasks);
+
+    }
+
+
+    public function generate_report ($start = "2017-01-01", $end = "2017-01-30", $counter = 0, $nextPageToken = "") 
+    {
+
+        $url = "tasks?createdDate={'start':'".$start."T00:00:01Z','end':'".$end."T00:00:01Z'}&pageSize=1000&nextPageToken=".$nextPageToken;
+        $tasks = $this->api_call("GET" , $url);
+        $next_page = false;
+
+        if (!empty($tasks['responseSize']))
+        {
+            $nextPageToken = $tasks['nextPageToken'];
+            $next_page = true;
+        }
+
         $values = array();
         if (!empty($tasks['data']))
         {
@@ -446,30 +462,31 @@ class PageController extends Controller
             $tasks_count = count($tasks);
             $tasks_concat = "";
             ini_set('max_execution_time', 6000); //100 minutes
+            for ($i = $counter; $i < $tasks_count; $i+=3)
+            {
+                $number = $i;
+                $title = $tasks[$i]['title'];
+                $createdDate = $tasks[$i]['createdDate'];
+                $allocated = $this->get_allocated_hour($tasks[$i]['id']);
+                $logs = $this->task_logs_total($tasks[$i]['id']);
+                if (empty($logs))
+                {
+                    $logs = 0;
+                }
+                $balance = $allocated - $logs;
+                $values[] = ["number" => $number, "title" => $title, "allocated" => $allocated, "logs" => $logs, "balance" => $balance, "createdDate" => $createdDate];
+            }
 
-            // for ($i=0; $i < $tasks_count; $i++)
-            // {
-            //     $title = $tasks[$i]['title'];
-            //     $createdDate = $tasks[$i]['createdDate'];
-            //     $allocated = $this->get_allocated_hour($tasks[$i]['id']);
-            //     $logs = $this->task_logs_total($tasks[$i]['id']);
-            //     if (empty($logs))
-            //     {
-            //         $logs = 0;
-            //     }
-            //     $balance = $allocated - $logs;
-            //     $values[] = ["title" => $title, "allocated" => $allocated, "logs" => $logs, "balance" => $balance, "createdDate" => $createdDate];
-            // }
+            if ($next_page)
+                $this->generate_report($start,$end,$nextPageToken);
 
-
-            return $tasks_count;
-
-            // return view('report',[ 
-            //     'title' => 'Report',
-            //     'values' => $values,
-            //     ]
-            //     );   
+            return view('report',[ 
+                'title' => 'Report',
+                'values' => $values,
+                ]
+                );   
         }
+
 
     }
 

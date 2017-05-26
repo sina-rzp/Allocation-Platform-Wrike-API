@@ -31,7 +31,9 @@ Route::get('api/calculate-tasks', ['middleware' => 'web', 'uses' => 'PageControl
 Route::get('api/create-task/folder/{folder_id}/new-task/{task_id}/folder-code/{folder_code}', ['middleware' => 'web', 'uses' => 'PageController@create_task'], function ($folder_id = null, $task_id = null, $folder_code =null){})->name('create-task');
 
 
-Route::get('api/report/start/{start}/end/{end}', ['middleware' => 'web', 'uses' => 'PageController@generate_report'], function($start = "2017-01-01", $end = "2017-01-02") {})->name('report-generate');
+Route::get('api/report/start/{start}/end/{end}/initial', ['middleware' => 'web', 'uses' => 'PageController@generate_report_init'], function($start = "2017-01-01", $end = "2017-01-02") {})->name('report-generate-init');
+
+Route::get('api/report/start/{start}/end/{end}/counter/{counter}/token/{token?}', ['middleware' => 'web', 'uses' => 'PageController@generate_report'], function($start = "2017-01-01", $end = "2017-01-02", $counter = 0, $nextPageToken = "") {})->name('report-generate');
 
 Route::get('api/report', ['middleware' => 'web', 'uses' => 'PageController@report_dates'], function(){})->name('report-dates');
 
